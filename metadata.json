@@ -1,0 +1,7 @@
+{
+  "name": "AuraLearn - AI Study Companion",
+  "description": "An AI-powered personalized learning app that generates study plans, explains topics, solves doubts, and tracks your progress with adaptive quizzes.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
