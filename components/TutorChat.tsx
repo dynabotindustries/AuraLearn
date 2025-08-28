@@ -114,12 +114,9 @@ const TutorChat: React.FC<TutorChatProps> = ({ chatHistory, setChatHistory }) =>
         if (!input.trim() || isLoading) return;
 
         const newUserMessage: ChatMessage = { id: Date.now().toString(), role: 'user', text: input.trim() };
-        const modelMessageId = (Date.now() + 1).toString();
-        const modelPlaceholder: ChatMessage = { id: modelMessageId, role: 'model', text: '' };
-        
         const historyForAPI = [...chatHistory, newUserMessage];
-        
-        setChatHistory([...historyForAPI, modelPlaceholder]);
+
+        setChatHistory(prev => [...prev, newUserMessage]);
         setInput('');
         setIsLoading(true);
 
@@ -127,6 +124,8 @@ const TutorChat: React.FC<TutorChatProps> = ({ chatHistory, setChatHistory }) =>
             const stream = await getTutorResponseStream(historyForAPI, useWebSearch);
             let fullText = '';
             let sources: { uri: string; title: string }[] | undefined = undefined;
+            const modelMessageId = (Date.now() + 1).toString();
+            let firstChunk = true;
 
             for await (const chunk of stream) {
                 fullText += chunk.text;
@@ -136,18 +135,32 @@ const TutorChat: React.FC<TutorChatProps> = ({ chatHistory, setChatHistory }) =>
                         .map((c: any) => ({ uri: c.web.uri, title: c.web.title }));
                 }
 
-                setChatHistory(prev =>
-                    prev.map(msg =>
-                        msg.id === modelMessageId ? { ...msg, text: fullText, sources } : msg
-                    )
-                );
+                if (firstChunk) {
+                    firstChunk = false;
+                    // On the first chunk, add the new model message to the history
+                    setChatHistory(prev => [...prev, { id: modelMessageId, role: 'model', text: fullText, sources }]);
+                } else {
+                    // On subsequent chunks, update the last message (which must be the model's)
+                    setChatHistory(prev => {
+                        const newHistory = [...prev];
+                        const lastMsg = newHistory[newHistory.length - 1];
+                        // Ensure we are updating the model's message
+                        if (lastMsg && lastMsg.id === modelMessageId) {
+                            newHistory[newHistory.length - 1] = { ...lastMsg, text: fullText, sources };
+                            return newHistory;
+                        }
+                        return prev; // Should not happen, but a safe fallback
+                    });
+                }
+            }
+             if (firstChunk) {
+                // Handle cases where the stream is empty (e.g., safety filters)
+                setChatHistory(prev => [...prev, { id: modelMessageId, role: 'model', text: "I'm sorry, I can't respond to that." }]);
             }
         } catch (error) {
             console.error(error);
             setChatHistory(prev =>
-                prev.map(msg =>
-                    msg.id === modelMessageId ? { ...msg, text: 'Sorry, I encountered an error. Please try again.' } : msg
-                )
+                [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: 'Sorry, I encountered an error. Please try again.' }]
             );
         } finally {
             setIsLoading(false);
