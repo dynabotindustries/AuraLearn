@@ -4,6 +4,7 @@ export enum View {
   TUTOR_CHAT = 'TUTOR_CHAT',
   PROGRESS = 'PROGRESS',
   QUIZ = 'QUIZ',
+  PDF_CHAT = 'PDF_CHAT',
 }
 
 export interface StudyTask {
@@ -52,4 +53,44 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   sources?: { uri: string; title: string }[];
+}
+
+
+// Add type definitions for the Web Speech API to avoid TypeScript errors.
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onresult: (event: SpeechRecognitionEvent) => void;
+    onerror: (event: Event) => void;
+    onend: () => void;
+    start(): void;
+    stop(): void;
+  }
+  
+  interface SpeechRecognitionEvent extends Event {
+    readonly results: SpeechRecognitionResultList;
+  }
+  
+  interface SpeechRecognitionResultList {
+    readonly length: number;
+    item(index: number): SpeechRecognitionResult;
+  }
+
+  interface SpeechRecognitionResult {
+    readonly isFinal: boolean;
+    readonly length: number;
+    item(index: number): SpeechRecognitionAlternative;
+  }
+
+  interface SpeechRecognitionAlternative {
+    readonly transcript: string;
+    readonly confidence: number;
+  }
 }

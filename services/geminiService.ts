@@ -1,12 +1,7 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import type { ChatMessage, QuizQuestion, StudyPlan } from '../types';
 
-if (!process.env.API_KEY) {
-    console.warn("API_KEY environment variable not set. Using a placeholder.");
-    process.env.API_KEY = "YOUR_API_KEY_HERE";
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 const model = 'gemini-2.5-flash';
 
 const studyPlanSchema = {
@@ -92,6 +87,33 @@ export const getTutorResponseStream = async (
   });
 
   return response;
+};
+
+export const getPDFQueryResponseStream = async (
+  chatHistory: ChatMessage[],
+  pdfText: string
+): Promise<AsyncGenerator<GenerateContentResponse>> => {
+    const userMessages = chatHistory.filter(m => m.role === 'user');
+    const lastUserQuestion = userMessages.length > 0 ? userMessages[userMessages.length - 1].text : '';
+
+    const systemInstruction = `You are an AI assistant that answers questions based *only* on the provided text from a PDF document. Do not use any external knowledge. If the answer cannot be found in the document, you must state that the information is not available in the provided text. Here is the document content:\n\n---\n${pdfText}\n---`;
+
+    const contentsForApi = [
+        ...chatHistory.map(({ role, text }) => ({
+            role: role === 'model' ? 'model' : 'user', // Ensure role is 'user' or 'model'
+            parts: [{ text }],
+        })),
+    ];
+
+    const response = await ai.models.generateContentStream({
+        model: model,
+        contents: contentsForApi,
+        config: {
+            systemInstruction: systemInstruction,
+        },
+    });
+
+    return response;
 };
 
 

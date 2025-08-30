@@ -6,7 +6,8 @@ import StudyPlanComponent from './components/StudyPlan';
 import TutorChat from './components/TutorChat';
 import ProgressTracker from './components/ProgressTracker';
 import QuizMaker from './components/QuizMaker';
-import { BookOpenIcon, ChartBarIcon, HomeIcon, MessageSquareIcon, XIcon, ClipboardCheckIcon } from './components/icons';
+import PDFChat from './components/PDFChat';
+import { BookOpenIcon, ChartBarIcon, HomeIcon, MessageSquareIcon, XIcon, ClipboardCheckIcon, FileTextIcon } from './components/icons';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>(View.DASHBOARD);
@@ -71,6 +72,8 @@ const App: React.FC = () => {
         return <StudyPlanComponent studyPlan={studyPlan} setStudyPlan={setStudyPlan} updateProgress={updateProgress} />;
       case View.TUTOR_CHAT:
         return <TutorChat chatHistory={chatHistory} setChatHistory={setChatHistory} />;
+      case View.PDF_CHAT:
+        return <PDFChat />;
       case View.PROGRESS:
         return <ProgressTracker progress={progress} />;
       case View.QUIZ:
@@ -103,6 +106,7 @@ const App: React.FC = () => {
            <NavButton icon={<HomeIcon />} label="Dashboard" targetView={View.DASHBOARD} />
            <NavButton icon={<BookOpenIcon />} label="Study Plan" targetView={View.STUDY_PLAN} />
            <NavButton icon={<MessageSquareIcon />} label="AI Tutor" targetView={View.TUTOR_CHAT} />
+           <NavButton icon={<FileTextIcon />} label="PDF Q&A" targetView={View.PDF_CHAT} />
            <NavButton icon={<ChartBarIcon />} label="Progress" targetView={View.PROGRESS} />
            <NavButton icon={<ClipboardCheckIcon />} label="Quiz" targetView={View.QUIZ} />
          </nav>
