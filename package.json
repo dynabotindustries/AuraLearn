@@ -1,24 +1,14 @@
 {
-  "name": "auralearn---ai-study-companion",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
+  "name": "auralearn-ai-study-companion",
+  "version": "1.0.0",
+  "description": "An AI-powered personalized learning app that generates study plans, explains topics, solves doubts, and tracks your progress with adaptive quizzes.",
   "dependencies": {
+    "@google/genai": "^1.15.0",
+    "dompurify": "^3.1.5",
+    "marked": "^13.0.0",
+    "pdfjs-dist": "^4.3.136",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "@google/genai": "^1.15.0",
-    "recharts": "^3.1.2",
-    "marked": "13.0.0",
-    "dompurify": "3.1.5"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "recharts": "^3.1.2"
   }
 }
