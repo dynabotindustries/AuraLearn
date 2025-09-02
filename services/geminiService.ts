@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentResponse, File as GeminiFile, Part } from "@google/genai";
 import type { ChatMessage, QuizQuestion, StudyPlan } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
@@ -89,25 +89,56 @@ export const getTutorResponseStream = async (
   return response;
 };
 
+export const uploadFile = async (fileToUpload: globalThis.File): Promise<GeminiFile> => {
+    try {
+        const file = await ai.files.upload({
+            file: fileToUpload,
+            config: {
+                displayName: fileToUpload.name,
+            },
+        });
+        return file;
+    } catch (error) {
+        console.error("Error uploading file:", error);
+        throw new Error("Failed to upload the file to the server.");
+    }
+};
+
+export const getFile = async (name: string): Promise<GeminiFile> => {
+    try {
+        const file = await ai.files.get({ name });
+        return file;
+    } catch (error) {
+        console.error("Error getting file state:", error);
+        throw new Error("Failed to get file status from the server.");
+    }
+};
+
 export const getPDFQueryResponseStream = async (
   chatHistory: ChatMessage[],
-  pdfText: string
+  fileUri: string,
+  mimeType: string,
 ): Promise<AsyncGenerator<GenerateContentResponse>> => {
-    const userMessages = chatHistory.filter(m => m.role === 'user');
-    const lastUserQuestion = userMessages.length > 0 ? userMessages[userMessages.length - 1].text : '';
+    const systemInstruction = `You are an AI assistant. Your task is to answer questions based *only* on the content of the provided document. Do not use any external knowledge. If the information to answer a question is not in the document, you must clearly state that the answer is not found in the provided text.`;
 
-    const systemInstruction = `You are an AI assistant that answers questions based *only* on the provided text from a PDF document. Do not use any external knowledge. If the answer cannot be found in the document, you must state that the information is not available in the provided text. Here is the document content:\n\n---\n${pdfText}\n---`;
-
-    const contentsForApi = [
-        ...chatHistory.map(({ role, text }) => ({
-            role: role === 'model' ? 'model' : 'user', // Ensure role is 'user' or 'model'
-            parts: [{ text }],
-        })),
-    ];
+    const contents = chatHistory.map(({ role, text }) => ({
+        role,
+        parts: [{ text }] as Part[],
+    }));
+    
+    const lastUserMessage = contents[contents.length - 1];
+    if (lastUserMessage && lastUserMessage.role === 'user') {
+        lastUserMessage.parts.unshift({
+            fileData: {
+                mimeType: mimeType,
+                fileUri: fileUri,
+            }
+        });
+    }
 
     const response = await ai.models.generateContentStream({
         model: model,
-        contents: contentsForApi,
+        contents: contents,
         config: {
             systemInstruction: systemInstruction,
         },

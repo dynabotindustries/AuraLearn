@@ -6,7 +6,6 @@
     "@google/genai": "^1.15.0",
     "dompurify": "^3.1.5",
     "marked": "^13.0.0",
-    "pdfjs-dist": "^4.3.136",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "recharts": "^3.1.2"
