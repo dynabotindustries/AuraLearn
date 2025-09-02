@@ -29,9 +29,9 @@ export interface StudyPlan {
 
 export interface QuizQuestion {
   question: string;
-  options?: string[];
+  options: string[];
   answer: string;
-  type: 'multiple-choice' | 'short-answer';
+  type: 'multiple-choice';
   explanation?: string;
 }
 

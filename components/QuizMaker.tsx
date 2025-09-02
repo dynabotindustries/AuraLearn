@@ -146,20 +146,14 @@ const QuizTaker: React.FC<{
             <p className="text-sm font-semibold text-blue-400 mb-2">Question {questionNumber} of {totalQuestions}</p>
             <p className="text-xl text-white mb-6">{question.question}</p>
             <form onSubmit={handleSubmit}>
-                {question.type === 'multiple-choice' && question.options ? (
-                    <div className="space-y-3 mb-6">
-                        {question.options.map((option, index) => (
-                            <label key={index} className={`block p-4 rounded-lg cursor-pointer transition-all ${selectedAnswer === option ? 'bg-blue-600 ring-2 ring-blue-400' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                                <input type="radio" name="option" value={option} checked={selectedAnswer === option} onChange={(e) => setSelectedAnswer(e.target.value)} className="hidden" />
-                                {option}
-                            </label>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="mb-6">
-                         <input type="text" value={selectedAnswer} onChange={(e) => setSelectedAnswer(e.target.value)} placeholder="Your answer..." className="w-full bg-gray-700 text-white p-3 rounded-md border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-                    </div>
-                )}
+                <div className="space-y-3 mb-6">
+                    {question.options.map((option, index) => (
+                        <label key={index} className={`block p-4 rounded-lg cursor-pointer transition-all ${selectedAnswer === option ? 'bg-blue-600 ring-2 ring-blue-400' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                            <input type="radio" name="option" value={option} checked={selectedAnswer === option} onChange={(e) => setSelectedAnswer(e.target.value)} className="hidden" />
+                            {option}
+                        </label>
+                    ))}
+                </div>
                  <button type="submit" disabled={!selectedAnswer} className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
                     {questionNumber < totalQuestions ? 'Next Question' : 'Finish Quiz'}
                 </button>

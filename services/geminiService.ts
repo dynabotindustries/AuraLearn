@@ -127,12 +127,12 @@ const quizSchema = {
                 type: Type.OBJECT,
                 properties: {
                     question: { type: Type.STRING },
-                    type: { type: Type.STRING, enum: ['multiple-choice', 'short-answer'] },
+                    type: { type: Type.STRING, enum: ['multiple-choice'] },
                     options: { type: Type.ARRAY, items: { type: Type.STRING } },
                     answer: { type: Type.STRING },
                     explanation: { type: Type.STRING, description: "A brief explanation of why the answer is correct." }
                 },
-                required: ["question", "type", "answer", "explanation"]
+                required: ["question", "type", "options", "answer", "explanation"]
             }
         }
     },
@@ -140,7 +140,7 @@ const quizSchema = {
 };
 
 export const generateCustomQuiz = async (topic: string, questionCount: number): Promise<{ topic: string, questions: QuizQuestion[] }> => {
-    const prompt = `Generate a quiz with exactly ${questionCount} questions on the topic of "${topic}". The questions should be a mix of multiple-choice and short-answer types. For each question, provide the question text, its type, options (if multiple-choice), the correct answer, and a brief explanation for the correct answer.`;
+    const prompt = `Generate a quiz with exactly ${questionCount} multiple-choice questions on the topic of "${topic}". For each question, provide the question text, its type as 'multiple-choice', an array of options (ideally 4), the correct answer, and a brief explanation for the correct answer.`;
 
     try {
         const response = await ai.models.generateContent({

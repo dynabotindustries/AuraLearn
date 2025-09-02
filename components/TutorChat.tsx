@@ -7,44 +7,52 @@ import DOMPurify from 'dompurify';
 
 const genId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
-const TutorChat: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+// Fix: Define component props to accept chat history and its setter from the parent.
+interface TutorChatProps {
+  chatHistory: ChatMessage[];
+  setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+}
+
+const TutorChat: React.FC<TutorChatProps> = ({ chatHistory, setChatHistory }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Fix: Add state for web search toggle.
+  const [useWebSearch, setUseWebSearch] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [chatHistory]);
 
   const handleSend = useCallback(async () => {
     const content = input.trim();
     if (!content || isLoading) return;
 
     const userMsg: ChatMessage = { id: genId(), role: 'user', text: content };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+    const newMessages = [...chatHistory, userMsg];
+    setChatHistory(newMessages);
     setInput('');
     setIsLoading(true);
 
     const botMsgId = genId();
-    setMessages(prev => [...prev, { id: botMsgId, role: 'model', text: '' }]);
+    setChatHistory(prev => [...prev, { id: botMsgId, role: 'model', text: '' }]);
 
     try {
-      const stream = await getTutorResponseStream(newMessages);
+      // Fix: Pass the `useWebSearch` boolean to the service function.
+      const stream = await getTutorResponseStream(newMessages, useWebSearch);
       let fullReply = '';
       for await (const chunk of stream) {
         const delta = chunk.text;
         if (delta) {
           fullReply += delta;
-          setMessages(prev =>
+          setChatHistory(prev =>
             prev.map(m => (m.id === botMsgId ? { ...m, text: fullReply } : m))
           );
         }
       }
     } catch (err) {
       console.error('Error fetching Gemini response:', err);
-      setMessages(prev =>
+      setChatHistory(prev =>
         prev.map(m =>
           m.id === botMsgId ? { ...m, text: '⚠️ Sorry, an error occurred.' } : m
         )
@@ -52,7 +60,7 @@ const TutorChat: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages]);
+  }, [input, isLoading, chatHistory, setChatHistory, useWebSearch]);
 
   return (
     <div className="flex flex-col h-full max-w-3xl mx-auto bg-gray-900 text-white animate-fade-in">
@@ -63,7 +71,7 @@ const TutorChat: React.FC = () => {
 
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
+        {chatHistory.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -112,6 +120,19 @@ const TutorChat: React.FC = () => {
           >
             {isLoading ? <LoaderIcon className="w-5 h-5" /> : <SendIcon className="w-5 h-5" />}
           </button>
+        </div>
+        {/* Fix: Add a toggle for web search. */}
+        <div className="flex items-center justify-end text-xs text-gray-400 pt-2 pr-2">
+          <label htmlFor="web-search-toggle" className="flex items-center cursor-pointer">
+            <input
+              id="web-search-toggle"
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+              checked={useWebSearch}
+              onChange={e => setUseWebSearch(e.target.checked)}
+            />
+            <span className="ml-2">Search with Google for recent topics</span>
+          </label>
         </div>
       </div>
     </div>
