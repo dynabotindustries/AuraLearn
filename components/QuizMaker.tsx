@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { generateCustomQuiz } from '../services/geminiService';
-import type { Progress, QuizQuestion } from '../types';
+import type { QuizQuestion } from '../types';
 import { LoaderIcon, CheckIcon, XIcon } from './icons';
 
 interface QuizMakerProps {
-  setProgress: React.Dispatch<React.SetStateAction<Progress>>;
+  onQuizComplete: (result: { score: number; topic: string }) => void;
 }
 
 type QuizState = 'config' | 'loading' | 'taking' | 'results';
 
-const QuizMaker: React.FC<QuizMakerProps> = ({ setProgress }) => {
+const QuizMaker: React.FC<QuizMakerProps> = ({ onQuizComplete }) => {
   const [quizState, setQuizState] = useState<QuizState>('config');
   const [topic, setTopic] = useState('');
   const [questionCount, setQuestionCount] = useState(5);
@@ -61,17 +61,11 @@ const QuizMaker: React.FC<QuizMakerProps> = ({ setProgress }) => {
       const finalScore = Math.round((correctCount / quiz.questions.length) * 100);
       setScore(finalScore);
 
-      // Update global progress
-      const newResult = {
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      // Update parent component
+      onQuizComplete({
         score: finalScore,
         topic: quiz.topic,
-      };
-      setProgress(prev => ({
-          ...prev,
-          quizHistory: [...prev.quizHistory, newResult],
-          learningData: [...prev.learningData, { date: newResult.date, score: finalScore }]
-      }));
+      });
   };
   
   const resetQuiz = () => {

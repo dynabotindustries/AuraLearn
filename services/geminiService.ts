@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, File as GeminiFile, Part } from "@google/genai";
 import type { ChatMessage, QuizQuestion, StudyPlan } from '../types';
 
@@ -66,27 +67,29 @@ export const generateStudyPlan = async (subject: string, dailyHours: number, goa
   }
 };
 
-export const getTutorResponseStream = async (
-  chatHistory: ChatMessage[],
-  useWebSearch: boolean
-): Promise<AsyncGenerator<GenerateContentResponse>> => {
-  const contents = chatHistory.map(({ role, text }) => ({
-    role,
-    parts: [{ text }],
-  }));
+export const getTaskExplanation = async (subject: string, topic: string, taskName: string): Promise<string> => {
+    const prompt = `You are an expert tutor for a student studying "${subject}".
+The topic for the day is "${topic}".
+The specific task is: "${taskName}".
 
-  const config: any = {};
-  if (useWebSearch) {
-    config.tools = [{ googleSearch: {} }];
-  }
+Please provide a detailed and clear explanation for this task. 
+- Start with a simple overview.
+- Break down complex concepts into smaller, easy-to-understand parts.
+- Use examples or analogies where helpful.
+- If it's a practical task (like coding), provide a brief code snippet or pseudocode.
+- Format your response using Markdown for readability (headings, lists, bold text, etc.).
+- Keep the tone encouraging and supportive.`;
 
-  const response = await ai.models.generateContentStream({
-    model: model,
-    contents: contents,
-    config: config,
-  });
-
-  return response;
+    try {
+        const response = await ai.models.generateContent({
+            model: model,
+            contents: prompt,
+        });
+        return response.text;
+    } catch (error) {
+        console.error("Error generating task explanation:", error);
+        throw new Error("Failed to generate an explanation for the task.");
+    }
 };
 
 export const uploadFile = async (fileToUpload: globalThis.File): Promise<GeminiFile> => {
@@ -145,6 +148,35 @@ export const getPDFQueryResponseStream = async (
     });
 
     return response;
+};
+
+// Fix: Add the missing getTutorResponseStream function.
+export const getTutorResponseStream = async (
+  chatHistory: ChatMessage[],
+  useWebSearch: boolean,
+): Promise<AsyncGenerator<GenerateContentResponse>> => {
+  const systemInstruction = `You are a friendly and knowledgeable AI tutor. Your goal is to help users understand complex topics in a clear and concise way. Be encouraging and supportive.`;
+
+  const contents = chatHistory.map(({ role, text }) => ({
+    role,
+    parts: [{ text }],
+  }));
+
+  const config: any = {
+    systemInstruction,
+  };
+
+  if (useWebSearch) {
+    config.tools = [{ googleSearch: {} }];
+  }
+
+  const response = await ai.models.generateContentStream({
+    model: model,
+    contents: contents,
+    config,
+  });
+
+  return response;
 };
 
 

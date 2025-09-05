@@ -36,15 +36,21 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ progress }) => {
         <div className="bg-gray-800 p-6 rounded-2xl shadow-lg">
             <h2 className="text-2xl font-bold text-white mb-4">Learning Curve</h2>
              <div style={{ width: '100%', height: 300 }}>
-                <ResponsiveContainer>
-                    <BarChart data={progress.learningData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#4A5568" />
-                        <XAxis dataKey="date" stroke="#A0AEC0" />
-                        <YAxis stroke="#A0AEC0" />
-                        <Tooltip contentStyle={{ backgroundColor: '#1A202C', border: '1px solid #4A5568' }} />
-                        <Bar dataKey="score" fill="#4299E1" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
+                {progress.learningData.length > 0 ? (
+                    <ResponsiveContainer>
+                        <BarChart data={progress.learningData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#4A5568" />
+                            <XAxis dataKey="date" stroke="#A0AEC0" />
+                            <YAxis stroke="#A0AEC0" />
+                            <Tooltip contentStyle={{ backgroundColor: '#1A202C', border: '1px solid #4A5568' }} />
+                            <Bar dataKey="score" fill="#4299E1" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                        <p>Complete some quizzes to see your learning curve!</p>
+                    </div>
+                )}
              </div>
         </div>
         

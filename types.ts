@@ -1,7 +1,6 @@
 export enum View {
   DASHBOARD = 'DASHBOARD',
   STUDY_PLAN = 'STUDY_PLAN',
-  TUTOR_CHAT = 'TUTOR_CHAT',
   PROGRESS = 'PROGRESS',
   QUIZ = 'QUIZ',
   PDF_CHAT = 'PDF_CHAT',
@@ -43,6 +42,7 @@ export interface QuizResult {
 
 export interface Progress {
   streak: number;
+  lastActivityDate?: string; // YYYY-MM-DD
   completedTasks: number;
   quizHistory: QuizResult[];
   learningData: { date: string; score: number }[];

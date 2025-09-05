@@ -1,4 +1,6 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+// Fix: Correctly import the `getTutorResponseStream` function.
 import { getTutorResponseStream } from '../services/geminiService';
 import type { ChatMessage } from '../types';
 import { LoaderIcon, SendIcon, SparklesIcon } from './icons';
@@ -41,14 +43,25 @@ const TutorChat: React.FC<TutorChatProps> = ({ chatHistory, setChatHistory }) =>
       // Fix: Pass the `useWebSearch` boolean to the service function.
       const stream = await getTutorResponseStream(newMessages, useWebSearch);
       let fullReply = '';
+      // Fix: Handle grounding chunks to display sources.
+      let sources: { uri: string; title: string }[] = [];
       for await (const chunk of stream) {
         const delta = chunk.text;
         if (delta) {
           fullReply += delta;
-          setChatHistory(prev =>
-            prev.map(m => (m.id === botMsgId ? { ...m, text: fullReply } : m))
-          );
         }
+        
+        if (useWebSearch && chunk.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+            chunk.candidates[0].groundingMetadata.groundingChunks.forEach(gc => {
+              if (gc.web && !sources.some(s => s.uri === gc.web.uri)) {
+                sources.push({ uri: gc.web.uri, title: gc.web.title || gc.web.uri });
+              }
+            });
+        }
+        
+        setChatHistory(prev =>
+          prev.map(m => (m.id === botMsgId ? { ...m, text: fullReply, sources: sources.length > 0 ? [...sources] : undefined } : m))
+        );
       }
     } catch (err) {
       console.error('Error fetching Gemini response:', err);
@@ -72,9 +85,12 @@ const TutorChat: React.FC<TutorChatProps> = ({ chatHistory, setChatHistory }) =>
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {chatHistory.map((msg) => (
+          // Fix: Update message container to handle sources display.
           <div
             key={msg.id}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex flex-col ${
+              msg.role === 'user' ? 'items-end' : 'items-start'
+            }`}
           >
             <div
               className={`p-4 rounded-2xl max-w-lg ${
@@ -94,6 +110,27 @@ const TutorChat: React.FC<TutorChatProps> = ({ chatHistory, setChatHistory }) =>
                 <LoaderIcon />
               )}
             </div>
+            {/* Fix: Render sources if they exist */}
+            {msg.sources && msg.sources.length > 0 && (
+              <div className="mt-2 text-xs text-gray-400 max-w-lg w-full">
+                <h4 className="font-bold">Sources:</h4>
+                <ol className="list-decimal list-inside space-y-1 pl-2">
+                  {msg.sources.map((source, index) => (
+                    <li key={index} className="truncate">
+                      <a
+                        href={source.uri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-blue-400 underline"
+                        title={source.title}
+                      >
+                        {source.title}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
           </div>
         ))}
         <div ref={chatEndRef} />

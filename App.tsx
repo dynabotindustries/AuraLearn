@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StudyPlan, Progress, ChatMessage } from './types';
+import { View, StudyPlan, Progress, QuizResult } from './types';
 import useLocalStorage from './hooks/useLocalStorage';
 import Dashboard from './components/Dashboard';
 import StudyPlanComponent from './components/StudyPlan';
-import TutorChat from './components/TutorChat';
 import ProgressTracker from './components/ProgressTracker';
 import QuizMaker from './components/QuizMaker';
 import PDFChat from './components/PDFChat';
-import { BookOpenIcon, ChartBarIcon, HomeIcon, MessageSquareIcon, XIcon, ClipboardCheckIcon, FileTextIcon } from './components/icons';
+import { BookOpenIcon, ChartBarIcon, HomeIcon, XIcon, ClipboardCheckIcon, FileTextIcon } from './components/icons';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>(View.DASHBOARD);
@@ -16,20 +15,82 @@ const App: React.FC = () => {
     streak: 0,
     completedTasks: 0,
     quizHistory: [],
-    learningData: [
-        { date: 'Mon', score: 65 },
-        { date: 'Tue', score: 70 },
-        { date: 'Wed', score: 68 },
-        { date: 'Thu', score: 80 },
-    ]
+    learningData: []
   });
-  const [chatHistory, setChatHistory] = useLocalStorage<ChatMessage[]>('chatHistory', []);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Checks on app load if the streak was broken
+  useEffect(() => {
+    setProgress(prev => {
+      if (!prev.lastActivityDate) {
+        return prev; // No activity yet, do nothing
+      }
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const lastActivity = new Date(prev.lastActivityDate);
+      lastActivity.setHours(0, 0, 0, 0);
+
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      // If last activity was before yesterday, reset streak to 0
+      if (lastActivity.getTime() < yesterday.getTime()) {
+        return { ...prev, streak: 0 };
+      }
+
+      return prev;
+    });
+  }, [setProgress]); // Run once on mount
+
+  const updateStreak = useCallback((currentProgress: Progress): Progress => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    const todayStr = today.toISOString().split('T')[0];
+  
+    if (!currentProgress.lastActivityDate) {
+      // First activity
+      return {
+        ...currentProgress,
+        streak: 1,
+        lastActivityDate: todayStr,
+      };
+    }
+  
+    const lastActivity = new Date(currentProgress.lastActivityDate);
+    lastActivity.setHours(0, 0, 0, 0); // Normalize
+  
+    if (today.getTime() === lastActivity.getTime()) {
+      // Same day activity, no change in streak
+      return currentProgress;
+    }
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+  
+    if (lastActivity.getTime() === yesterday.getTime()) {
+      // Consecutive day
+      return {
+        ...currentProgress,
+        streak: currentProgress.streak + 1,
+        lastActivityDate: todayStr,
+      };
+    } else {
+      // Not consecutive, reset streak
+      return {
+        ...currentProgress,
+        streak: 1,
+        lastActivityDate: todayStr,
+      };
+    }
+  }, []);
 
   const updateProgress = useCallback((taskId: string) => {
     if (!studyPlan) return;
 
     let taskFound = false;
+    let taskWasCompleted = false; // Check if a task is being marked complete
     const updatedPlan: StudyPlan = {
       ...studyPlan,
       days: studyPlan.days.map(day => ({
@@ -37,6 +98,7 @@ const App: React.FC = () => {
         tasks: day.tasks.map(task => {
           if (task.id === taskId) {
             taskFound = true;
+            taskWasCompleted = !task.completed; // True if task was incomplete before click
             return { ...task, completed: !task.completed };
           }
           return task;
@@ -47,9 +109,32 @@ const App: React.FC = () => {
     if (taskFound) {
       setStudyPlan(updatedPlan);
       const completedCount = updatedPlan.days.flatMap(d => d.tasks).filter(t => t.completed).length;
-      setProgress(prev => ({...prev, completedTasks: completedCount}));
+      setProgress(prev => {
+        let newProgress = { ...prev, completedTasks: completedCount };
+        if (taskWasCompleted) {
+          // Only update streak if a task is marked as complete
+          newProgress = updateStreak(newProgress);
+        }
+        return newProgress;
+      });
     }
-  }, [studyPlan, setProgress, setStudyPlan]);
+  }, [studyPlan, setProgress, setStudyPlan, updateStreak]);
+  
+  const handleQuizCompletion = useCallback((result: { score: number; topic: string; }) => {
+    const newResult: QuizResult = {
+      ...result,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    };
+
+    setProgress(prev => {
+      const newProgress = {
+        ...prev,
+        quizHistory: [...prev.quizHistory, newResult],
+        learningData: [...prev.learningData, { date: newResult.date, score: newResult.score }]
+      };
+      return updateStreak(newProgress);
+    });
+  }, [setProgress, updateStreak]);
 
   const NavButton = ({ icon, label, targetView }: { icon: React.ReactNode, label: string, targetView: View }) => (
     <button
@@ -70,14 +155,12 @@ const App: React.FC = () => {
     switch (view) {
       case View.STUDY_PLAN:
         return <StudyPlanComponent studyPlan={studyPlan} setStudyPlan={setStudyPlan} updateProgress={updateProgress} />;
-      case View.TUTOR_CHAT:
-        return <TutorChat chatHistory={chatHistory} setChatHistory={setChatHistory} />;
       case View.PDF_CHAT:
         return <PDFChat />;
       case View.PROGRESS:
         return <ProgressTracker progress={progress} />;
       case View.QUIZ:
-        return <QuizMaker setProgress={setProgress} />;
+        return <QuizMaker onQuizComplete={handleQuizCompletion} />;
       case View.DASHBOARD:
       default:
         return <Dashboard setView={setView} progress={progress} studyPlan={studyPlan} />;
@@ -105,7 +188,6 @@ const App: React.FC = () => {
          <nav className="flex flex-col items-center w-full space-y-4 pt-10 md:pt-16">
            <NavButton icon={<HomeIcon />} label="Dashboard" targetView={View.DASHBOARD} />
            <NavButton icon={<BookOpenIcon />} label="Study Plan" targetView={View.STUDY_PLAN} />
-           <NavButton icon={<MessageSquareIcon />} label="AI Tutor" targetView={View.TUTOR_CHAT} />
            <NavButton icon={<FileTextIcon />} label="PDF Q&A" targetView={View.PDF_CHAT} />
            <NavButton icon={<ChartBarIcon />} label="Progress" targetView={View.PROGRESS} />
            <NavButton icon={<ClipboardCheckIcon />} label="Quiz" targetView={View.QUIZ} />
