@@ -11,19 +11,6 @@
         -moz-osx-font-smoothing: grayscale;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.15.0",
-    "recharts": "https://aistudiocdn.com/recharts@^3.1.2",
-    "marked": "https://cdn.jsdelivr.net/npm/marked@13.0.0/lib/marked.esm.js",
-    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.es.mjs"
-  }
-}
-</script>
 <script>
   // Vercel and other production environments may not have `process` defined on the
   // window. This small polyfill prevents a runtime crash. Your app will load,
@@ -32,6 +19,19 @@
   if (typeof window.process === 'undefined') {
     window.process = { env: {} };
   }
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0",
+    "marked": "https://aistudiocdn.com/marked@^16.2.1",
+    "dompurify": "https://aistudiocdn.com/dompurify@^3.2.6",
+    "recharts": "https://aistudiocdn.com/recharts@^3.1.2"
+  }
+}
 </script>
 </head>
   <body class="bg-gray-900">
